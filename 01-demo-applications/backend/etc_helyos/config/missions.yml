@@ -1,0 +1,14 @@
+version: '2.0'
+
+missions:
+
+    driving:
+      maxagents: 1
+      description: "drive from a to b"
+
+      recipe:
+        steps:
+          - step: "microservice1"
+            service_type: "drive"
+            request_order: 1
+            apply_result: true

@@ -1,0 +1,18 @@
+version: '2.0'
+
+services:
+
+    my_path_planner:
+      is_dummy: false
+      domain: "Assignment planner"  # Assignment planner | Map Server | Storage server
+      type: "drive"
+      url: http://local_planner_service:9002/plan_job/
+      enable: true
+      apikey: "CN783V9SygdG0deHgfesdfsaeNuCqwbm"
+      timeout: 300
+      description: "Simple clothoid path pallaner"
+      
+      context:
+        map_data: true
+        all_agents_data: false
+        mission_agents_data: true

@@ -1,0 +1,85 @@
+# Check the documentation for more details: 
+# https://helyos-manual.readthedocs.io/en/latest/2-helyos-configuration/getting-started.html#helyos-setting
+
+services:
+
+    helyos_core:
+        image: helyosframework/helyos_core:test
+
+        ports:
+            - 5002:5002 # Websocket: Push Notifications.
+            - 5000:5000 # GraphQL: Communicate with External Applications
+            - 8080:8080 # HelyOS Dashboard: Settings and Monitoring for Developers
+
+        volumes:
+            - ./etc_helyos/:/etc/helyos/:ro
+
+        environment:
+            # DATABASE
+            - PGUSER=helyos_db_admin
+            - PGPASSWORD=helyos_secret
+            - JWT_SECRET=keyboard_kitten
+            - PGHOST=local_postgres
+            - PGDATABASE=smartfarm_db
+            - PGPORT=5432
+            - GQLPORT=5000
+
+            # RABBITMQ
+            - RBMQ_HOST=local_rabbitmq
+            - RBMQ_PORT=5672
+            - RBMQ_API_PORT=15672
+            - RBMQ_SSL=False     # For TLS support
+            - RBMQ_API_SSL=False # For TLS support
+
+            # RBMQ ACCOUNTS
+            - CREATE_RBMQ_ACCOUNTS=True
+            - RBMQ_ADMIN_USERNAME=helyos_rbmq_admin # Set it if CREATE_RBMQ_ACCOUNTS is True
+            - RBMQ_ADMIN_PASSWORD=helyos_secret     # Set it if CREATE_RBMQ_ACCOUNTS is True
+            - AGENT_AUTO_REGISTER_TOKEN=0001-0002-0003-0000-0004 # Delete it for production
+
+        networks:
+            - my-docker-net
+
+        depends_on:
+            - local_postgres
+            - local_rabbitmq
+
+
+    local_postgres:
+        image: postgres:13
+        hostname: local_postgres
+        volumes:
+            - postgres_data:/var/lib/postgresql/data/
+        environment:
+            POSTGRES_USER: helyos_db_admin
+            POSTGRES_PASSWORD: helyos_secret
+        networks:
+            - my-docker-net
+
+
+    local_rabbitmq:
+        image: rabbitmq:3-management
+        hostname: local_rabbitmq
+        volumes:
+            - rbmq_data:/var/lib/rabbitmq/
+        networks:
+            - my-docker-net
+        ports:
+            - 15672:15672
+            - 5672:5672 
+
+
+
+networks:
+    my-docker-net:
+        external: true
+
+
+volumes: # For persistent data
+    postgres_data:
+        external: false
+    rbmq_data:
+        external: false
+
+
+
