@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimalistic Map with Floating Images - Leaflet</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map { height: 100vh; }
+        /* Set the rotation origin to the center of the icon */ 
+        .leaflet-rotated-icon { transform-origin: 50% 50%; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="Leaflet.Marker.SlideTo.js"></script>
+<script src="leaflet.rotatedMarker.js"></script>
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script>
+
+    ///////  HELYOS CLIENT  SETTINGS /////////
+    const socket = io('wss://helyos-server.ivi.fraunhofer.de', {
+        path: '/socket.io/',
+        transports: ['websocket'],
+        auth: {
+            token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoicm9sZV9hcHBsaWNhdGlvbiIsInBlcnNvbl9pZCI6bnVsbCwiZXhwIjoxNzY0NzYxNDU3LCJpYXQiOjE3MzMyMjU0NTYsImF1ZCI6InBvc3RncmFwaGlsZSIsImlzcyI6InBvc3RncmFwaGlsZSJ9.Hzqf1npJZwt49pXOyS77hAd4lpsdFnK1trmPveYnBE4' 
+        }
+    });
+
+
+    ///////  LEAFLET MAP SETTINGS /////////
+    const refPoint = [48.11398, 11.542205];
+    const goalBlue = [-2013, 51588]
+    const goalRed = [2499, -50177];
+    const blueIcon = './tractor_blue.png';
+    const redIcon = './tractor_red.png';
+    const vehicleIconOption = (iconUrl, text) => ({
+        iconUrl: iconUrl,
+        iconSize: [15, 24   ], // size of the icon,
+        className: 'leaflet-rotated-icon' // custom class for CSS rotation
+    });
+    // Create a label using L.divIcon
+    var createLabelIcon = function(value) {
+        return L.divIcon({
+            className: 'label-icon',
+            html: '<div style="position: relative; text-align: center;">' +
+                '<div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 12px; color: black;">' + value + '</div>' +
+                '</div>',
+            iconSize: [0, 0] // Size of the icon, set to 0,0 to make it invisible
+        });
+    };
+
+    const ballIconOption = {
+        iconUrl: './ball_transp.png',
+        iconSize: [20, 20], // size of the icon,
+        className: 'leaflet-rotated-icon' // custom class for CSS rotation
+    };
+    const ballIcon = L.icon(ballIconOption);
+    const vehicleRedIcon = L.icon(vehicleIconOption(redIcon));
+    const vehicleBlueIcon = L.icon(vehicleIconOption(blueIcon));
+
+
+    const map = L.map('map').setView(refPoint, 19);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        maxZoom:19
+    }).addTo(map);
+
+
+
+    /////// MAIN /////////
+    // Function to convert meters to latitude/longitude from a reference point
+    const agentMarkers = {}, agentParsedData = {};
+
+    function milimetersToLatLng(lat, lng, dx, dy) {
+        const R = 6378137000; // Earth’s radius, sphere
+        const dLat = dy / R;
+        const dLng = dx / (R * Math.cos(Math.PI * lat / 180));
+        const latO = lat + dLat * 180 / Math.PI;
+        const lngO = lng + dLng * 180 / Math.PI;
+        return [latO, lngO];
+    }
+
+
+    socket.on('new_agent_poses', (data) => {
+        data.forEach(agent => {
+            console.log(agent)
+            if (agent.uuid) {
+                if (!agentParsedData[agent.uuid]) agentParsedData[agent.uuid] = {};
+                agentParsedData[agent.uuid].x =  agent.x;
+                agentParsedData[agent.uuid].y =  agent.y;
+                agentParsedData[agent.uuid].orientation = -agent.orientations[0]/1000 * 180 / Math.PI + 270;
+                agentParsedData[agent.uuid].sensors = agent.sensors? agent.sensors.football_sensors:{};
+            }
+        });
+
+        for (const [key, value] of Object.entries(agentParsedData)) {
+            if (agentMarkers[key]) { // Update marker
+                const pass_score = value.sensors?.pass_score?   value.sensors.pass_score.value.toFixed(1): ''
+                const agentLatLng = milimetersToLatLng(refPoint[0], refPoint[1], value.x, value.y);
+                agentMarkers[key]['iconMarker'].setRotationAngle(value.orientation)
+                                                .slideTo(L.latLng(agentLatLng),{duration: 750 });
+                agentMarkers[key]['labelMarker'].setIcon(createLabelIcon(pass_score))
+                                                .slideTo(L.latLng(agentLatLng),{duration: 750 });                               
+
+            } else { // Create a new marker 
+                console.log("creating agent marker", key);
+                const agentLatLng = milimetersToLatLng(refPoint[0], refPoint[1], value.x, value.y);
+                let icon = vehicleBlueIcon;
+                if (key.includes('blue')) {
+                    icon = vehicleBlueIcon;
+                }
+                if (key.includes('red')) {
+                    icon = vehicleRedIcon;
+                }
+                agentMarkers[key] = {
+                    'labelMarker': L.marker(agentLatLng, {icon: createLabelIcon('Initial Value')}),
+                    'iconMarker': L.marker(agentLatLng, {icon: icon}) 
+                                     .setRotationOrigin('center center')
+                                     .setRotationAngle(value.orientation)
+                }
+                                     
+                agentMarkers[key]['groupMarker'] = L.layerGroup([
+                                                    agentMarkers[key]['labelMarker'],
+                                                    agentMarkers[key]['iconMarker'],
+                                                    ]).addTo(map);
+      
+            }
+        };
+
+    });
+
+</script>
+
+</body>
+</html>

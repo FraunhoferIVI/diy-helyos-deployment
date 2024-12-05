@@ -1,0 +1,10 @@
+FROM rabbitmq:3-management
+# we cannot simply map the certificates in the docker-compose volumes
+# because rabbitmq is strict with the permissions.
+ADD ./certificates /etc/ssl/certs/
+RUN chown rabbitmq:rabbitmq /etc/ssl/certs \
+	&& chown rabbitmq:rabbitmq /etc/ssl/certs/* \
+	&& chmod 710 /etc/ssl/certs \
+	&& chmod 610 /etc/ssl/certs/*
+
+

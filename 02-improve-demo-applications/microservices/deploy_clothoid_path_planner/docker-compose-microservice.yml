@@ -1,0 +1,18 @@
+
+services:
+
+  local_planner_service:
+    image: my_registry/my_clotoid_planner:vs1.0
+    restart: always
+    container_name: local_planner_service
+    networks:
+      - my-docker-net
+    # ports: 
+      # - "9002:9002"  # optional
+
+networks:
+    my-docker-net:
+        external: true
+
+
+

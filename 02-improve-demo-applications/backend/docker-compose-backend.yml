@@ -1,0 +1,105 @@
+# Check the documentation for more details: 
+# https://helyos-manual.readthedocs.io/en/latest/2-helyos-configuration/getting-started.html#helyos-setting
+
+services:
+
+    nginx_server:
+        image: nginx:stable-alpine
+        container_name: nginx_server
+        ports:
+            - "443:443"
+        volumes:
+            - ./etc_nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+            - ./certificates:/etc/ssl:ro
+        networks:
+            - my-docker-net
+
+        depends_on:
+            - helyos_core
+
+
+    helyos_core:
+        image: helyosframework/helyos_core:2.2.0-rc1
+
+        ports:
+            - 5002:5002 # Websocket: Push Notifications.
+            - 5000:5000 # GraphQL: Communicate with External Applications
+            - 8080:8080 # HelyOS Dashboard: Settings and Monitoring for Developers
+
+        volumes:
+            - ./etc_helyos/:/etc/helyos/:ro
+
+        environment:
+            # DATABASE
+            - PGUSER=helyos_db_admin
+            - PGPASSWORD=${PGPASSWORD}
+            - JWT_SECRET=${PGPASSWORD}
+            - PGHOST=local_postgres
+            - PGDATABASE=smartfarm_db
+            - PGPORT=5432
+            - GQLPORT=5000
+
+            # RABBITMQ
+            - RBMQ_HOST=local_rabbitmq
+            - RBMQ_PORT=5672
+            - RBMQ_API_PORT=15672
+            - RBMQ_SSL=False     # For TLS support
+            - RBMQ_API_SSL=False # For TLS support
+
+            # RBMQ ACCOUNTS
+            - CREATE_RBMQ_ACCOUNTS=True
+            - RBMQ_ADMIN_USERNAME=helyos_rbmq_admin # Set it if CREATE_RBMQ_ACCOUNTS is True
+            - RBMQ_ADMIN_PASSWORD=${RBMQ_PASSWORD}     # Set it if CREATE_RBMQ_ACCOUNTS is True
+            # - AGENT_AUTO_REGISTER_TOKEN=0001-0002-0003-0000-0004 # Deleted for production
+
+        networks:
+            - my-docker-net
+
+        depends_on:
+            - local_postgres
+            - local_rabbitmq
+
+
+    local_postgres:
+        image: postgres:13
+        hostname: local_postgres
+        volumes:
+            - postgres_data:/var/lib/postgresql/data/
+        environment:
+            POSTGRES_USER: helyos_db_admin
+            POSTGRES_PASSWORD: helyos_secret
+        networks:
+            - my-docker-net
+
+
+    local_rabbitmq:
+        # image: rabbitmq:3-management
+        build: 
+            context: .
+            dockerfile: Dockerfile_RBMQ_with_certs
+        hostname: local_rabbitmq
+        volumes:
+            - ./etc_rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+            - ./etc_rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+            - rbmq_data:/var/lib/rabbitmq/
+        networks:
+            - my-docker-net
+        ports:
+            # - 15672:15672
+            # - 5672:5672 
+            - 15671:15671
+            - 5673:5673 
+
+networks:
+    my-docker-net:
+        external: true
+
+
+volumes: # For persistent data
+    postgres_data:
+        external: false
+    rbmq_data:
+        external: false
+
+
+

@@ -1,0 +1,24 @@
+
+services:
+
+  local_planner_service:
+    restart: always
+    container_name: local_planner_service
+
+    build: 
+      dockerfile: ./build_python_image/Dockerfile
+
+    volumes:
+        - ./src/:/app/src
+
+    networks:
+      - my-docker-net
+
+    # ports: 
+    #   - "9002:9002"  # optional
+
+networks:
+    my-docker-net:
+        external: true
+
+

@@ -1,0 +1,1 @@
+[rabbitmq_mqtt, rabbitmq_auth_mechanism_ssl, rabbitmq_federation_management, rabbitmq_stomp].
