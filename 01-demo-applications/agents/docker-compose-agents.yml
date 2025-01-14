@@ -1,32 +1,32 @@
 services:
 
     agent_simulator:
-    image: helyosframework/helyos_agent_slim_simulator:0.8.2
-    platform: linux/amd64
-    environment:
+        image: helyosframework/helyos_agent_slim_simulator:0.8.2
+        platform: linux/amd64
+        environment:
 
-        # AGENT ID
-        - UUID=RANDOM_UUID
-        - ASSIGNMENT_FORMAT=trajectory  
-        - NAME=MY_TRUCK2
-        - X0=28000
-        - Y0=0
-        - ORIENTATION=0.329
-        - VELOCITY=10
-        - YARD_UID=FTB
-        - UPDATE_RATE=10
+            # AGENT ID
+            - UUID=RANDOM_UUID
+            - ASSIGNMENT_FORMAT=trajectory  
+            - NAME=MY_TRUCK2
+            - X0=28000
+            - Y0=0
+            - ORIENTATION=0.329
+            - VELOCITY=10
+            - YARD_UID=FTB
+            - UPDATE_RATE=10
 
-        # RABBITMQ 
-        - RBMQ_HOST=local_rabbitmq
-        - RBMQ_PORT=5672
-        - REGISTRATION_TOKEN=0001-0002-0003-0000-0004
+            # RABBITMQ 
+            - RBMQ_HOST=local_rabbitmq
+            - RBMQ_PORT=5672
+            - REGISTRATION_TOKEN=0001-0002-0003-0000-0004
 
-    networks:
-        - my-docker-net    
+        networks:
+            - my-docker-net    
 
-    command: ["python", "-u", "main.py"]
-    deploy:
-        replicas: 11 
+        command: ["python", "-u", "main.py"]
+        deploy:
+            replicas: 11 
 
 networks:
     my-docker-net:

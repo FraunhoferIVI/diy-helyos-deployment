@@ -4,7 +4,7 @@
 services:
 
     helyos_core:
-        image: helyosframework/helyos_core:2.2.0-rc1
+        image: helyosframework/helyos_core:2.2.0-rc3
 
         ports:
             - 5002:5002 # Websocket: Push Notifications.
@@ -48,6 +48,8 @@ services:
     local_postgres:
         image: postgres:13
         hostname: local_postgres
+        ports:
+            - 5432:5432 #
         volumes:
             - postgres_data:/var/lib/postgresql/data/
         environment:
