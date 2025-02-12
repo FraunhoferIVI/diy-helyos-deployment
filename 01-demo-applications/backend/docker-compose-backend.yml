@@ -4,7 +4,7 @@
 services:
 
     helyos_core:
-        image: helyosframework/helyos_core:2.2.0-rc3
+        image: helyosframework/helyos_core:2.2.0
 
         ports:
             - 5002:5002 # Websocket: Push Notifications.
